@@ -1,8 +1,11 @@
-import random
+import base64
+import math
+import colorsys
 
 import mido
 import requests
 
+NUM_LEDS = 110
 
 def run_with_keyboard():
     with mido.open_input() as inport:
@@ -11,26 +14,55 @@ def run_with_keyboard():
             print(f"{message=}")
             if message.type == "note_on" and message.velocity != 0:
                 print(f"{message.note=}, {message.velocity=}")
-                r = random.Random()
-                red_channel = r.randint(50, 255)
-                green_channel = r.randint(50, 255)
-                blue_channel = r.randint(50, 255)
-                response = requests.get(
-                    "http://192.168.178.26/setMode",
-                    params={
-                        "newMode": "SingleColor",
-                        "color": f"0x{red_channel:x}{green_channel:x}{blue_channel:x}",
-                    },
+                hue = (message.note-21)/(108 - 21)
+                print(f"{hue=}")
+                r, g, b = colorsys.hsv_to_rgb(hue, 1, 1)
+                r, g, b = unit_to_byte_range(r, g, b)
+                colors = [r, g, b] * NUM_LEDS
+                payload = bytes(colors)
+                response = requests.post(
+                    "http://192.168.178.26/ColorFromPayload",
+                    headers={'Content-Type': 'application/octet-stream'},
+                    data=payload,
                 )
+                print(response.status_code)
+                print(response.text)
 
 
 def run_synthetic():
-    response = requests.get(
-        "http://192.168.178.26/setMode",
-        params={
-            "newMode": "Piano",
-            "Payload": f"hello",
-        },
+    payload = b"\x00\xFF\x00" * 110
+
+    colors = []
+    num_leds = 110
+    for i in range(num_leds):
+        hue = i/num_leds
+        r, g, b = colorsys.hsv_to_rgb(hue, 1, 1)
+        colors.append(math.floor(r * 255))
+        colors.append(math.floor(g * 255))
+        colors.append(math.floor(b * 255))
+
+    payload = bytes(colors)
+
+    response = requests.post(
+        "http://192.168.178.26/ColorFromPayload",
+        headers={'Content-Type': 'application/octet-stream'},
+        data=payload,
     )
+    print(response.status_code)
+    print(response.text)
+
+
+def map_range(value, start_range_low, start_range_high, end_rage_low, end_range_high):
+    end_range_span = end_range_high-end_rage_low
+    proportion = (value-start_range_low)/(start_range_high - start_range_low)
+    new_value = math.floor(end_rage_low + end_range_span*proportion)
+    return new_value
+
+
+def unit_to_byte_range(*values: float):
+    mapped_values = []
+    for value in values:
+        mapped_values.append(math.floor(value*255))
+    return mapped_values
 
 run_with_keyboard()
