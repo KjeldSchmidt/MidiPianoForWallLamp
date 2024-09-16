@@ -14,6 +14,8 @@ class PianoHandler:
         self.pressed_keys = set()
         self.decaying_keys = set()
         self.base_hue = 0.115
+        self.background_brightness = 0.25
+        self.foreground_brightness = 1
         pass
 
     def handle_message(self, message: mido.Message):
@@ -26,21 +28,30 @@ class PianoHandler:
             self.decaying_keys.add(message.note)
         if message.type == "program_change" and message.program < 9:
             self.base_hue = 0.115 * message.program
+        if message.type == "control_change":
+            print("control change")
+            if message.control == 73:
+                self.foreground_brightness = message.value/255
+                print(f"self.foreground_brightness = {message.value / 255}")
+            if message.control == 72:
+                self.background_brightness = message.value/255
+                print(f"self.background_brightness = {message.value / 255}")
 
         self.send_colors()
 
     def calc_colors(self):
         hue = self.base_hue
-        r, g, b = colorsys.hsv_to_rgb(hue, 1, 0.25)
+        r, g, b = colorsys.hsv_to_rgb(hue, 1, self.background_brightness)
         r, g, b = unit_to_byte_range(r, g, b)
         self.colors = [r, g, b] * NUM_LEDS
 
         pressed_hue = self.base_hue + 0.25
-        r, g, b = colorsys.hsv_to_rgb(pressed_hue, 1, 1)
+        r, g, b = colorsys.hsv_to_rgb(pressed_hue, 1, self.foreground_brightness)
         r, g, b = unit_to_byte_range(r, g, b)
         for key in self.pressed_keys:
-            led_index = map_note_to_led(key)
-            self.colors[(led_index-1)*3:(led_index+2)*3] = [r, g, b] * 3
+            led_indices = map_note_to_leds(key)
+            for led_index in led_indices:
+                self.colors[led_index*3:(led_index+1)*3] = [r, g, b]
 
     def send_colors(self):
         self.calc_colors()
