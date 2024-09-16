@@ -6,6 +6,8 @@ import requests
 
 
 NUM_LEDS = 110
+LEDS_LOWER = 54
+LEDS_UPPER = 56
 
 
 class PianoHandler:
@@ -65,15 +67,17 @@ class PianoHandler:
         # print(response.text)
 
 
-def map_note_to_led(note: int) -> int:
+def map_note_to_leds(note: int) -> list[int]:
     black_keys = []
     for i in range(22, 107, 12):
         black_keys.extend([i, i+3, i+5, i+8, i+10,])
 
     if note in black_keys:
-        return map_range(note, 22, 106, 56, 110)
+        key_center = map_range(note, 22, 106, 110, 56)
+    else:
+        key_center = map_range(note, 21, 108, 0, 55)
 
-    return map_range(note, 21, 108, 0, 55)
+    return [key_center-1, key_center, key_center+1]
 
 
 def map_range(value, start_range_low, start_range_high, end_rage_low, end_range_high):
