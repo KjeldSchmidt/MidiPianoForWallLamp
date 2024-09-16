@@ -4,10 +4,18 @@ import math
 import mido
 import requests
 
+from Controls import Controls
 
 NUM_LEDS = 110
 LEDS_LOWER = 54
 LEDS_UPPER = 56
+
+CONTROL_NAMES = {
+    "foreground_brightness": 73,
+    "background_brightness": 72,
+    "foreground_hue": 10,
+    "background_hue": 42,
+}
 
 
 class PianoHandler:
@@ -16,9 +24,7 @@ class PianoHandler:
         self.pressed_keys = set()
         self.decaying_keys = set()
         self.base_hue = 0.115
-        self.background_brightness = 0.25
-        self.foreground_brightness = 1
-        pass
+        self.controls = Controls(CONTROL_NAMES)
 
     def handle_message(self, message: mido.Message):
         if message.type == "note_on" and message.velocity != 0:
@@ -31,24 +37,16 @@ class PianoHandler:
         if message.type == "program_change" and message.program < 9:
             self.base_hue = 0.115 * message.program
         if message.type == "control_change":
-            print("control change")
-            if message.control == 73:
-                self.foreground_brightness = message.value/255
-                print(f"self.foreground_brightness = {message.value / 255}")
-            if message.control == 72:
-                self.background_brightness = message.value/255
-                print(f"self.background_brightness = {message.value / 255}")
+            self.controls.handle_message(message)
 
         self.send_colors()
 
     def calc_colors(self):
-        hue = self.base_hue
-        r, g, b = colorsys.hsv_to_rgb(hue, 1, self.background_brightness)
+        r, g, b = colorsys.hsv_to_rgb(self.controls.background_hue / 127, 1, self.controls.background_brightness / 255)
         r, g, b = unit_to_byte_range(r, g, b)
         self.colors = [r, g, b] * NUM_LEDS
 
-        pressed_hue = self.base_hue + 0.25
-        r, g, b = colorsys.hsv_to_rgb(pressed_hue, 1, self.foreground_brightness)
+        r, g, b = colorsys.hsv_to_rgb(self.controls.foreground_hue / 127, 1, self.controls.foreground_brightness / 255)
         r, g, b = unit_to_byte_range(r, g, b)
         for key in self.pressed_keys:
             led_indices = map_note_to_leds(key)
