@@ -6,9 +6,9 @@ import requests
 
 from Controls import Controls
 
-NUM_LEDS = 110
-LEDS_LOWER = 54
-LEDS_UPPER = 56
+LEDS_LOWER = 55
+LEDS_UPPER = 55
+NUM_LEDS = LEDS_LOWER + LEDS_UPPER
 
 CONTROL_NAMES = {
     "foreground_brightness": 73,
@@ -50,6 +50,7 @@ class PianoHandler:
         r, g, b = unit_to_byte_range(r, g, b)
         for key in self.pressed_keys:
             led_indices = map_note_to_leds(key)
+            print(led_indices)
             for led_index in led_indices:
                 self.colors[led_index*3:(led_index+1)*3] = [r, g, b]
 
@@ -71,11 +72,15 @@ def map_note_to_leds(note: int) -> list[int]:
         black_keys.extend([i, i+3, i+5, i+8, i+10,])
 
     if note in black_keys:
-        key_center = map_range(note, 22, 106, 110, 56)
+        key_range = range(22, 106)
+        led_range = range(NUM_LEDS-1, LEDS_LOWER, -1)
     else:
-        key_center = map_range(note, 21, 108, 0, 55)
+        key_range = range(21, 109)
+        led_range = range(0, LEDS_LOWER-1)
 
-    return [key_center-1, key_center, key_center+1]
+    key_center = map_range(note, key_range.start, key_range.stop, led_range.start, led_range.stop)
+
+    return [led for led in [key_center-1, key_center, key_center+1] if led in led_range]
 
 
 def map_range(value, start_range_low, start_range_high, end_rage_low, end_range_high):
