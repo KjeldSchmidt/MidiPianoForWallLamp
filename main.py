@@ -8,13 +8,15 @@ from PianoHandler import PianoHandler
 
 
 def run_with_keyboard():
+    piano_handler = PianoHandler()
     with mido.open_input() as inport:
         print("Ready!")
-        piano_handler = PianoHandler()
-        for message in inport:
-            print(f"{message=}")
-            piano_handler.handle_message(message)
+        while True:
+            for message in inport.iter_pending():
+                print(f"{message=}")
+                piano_handler.handle_message(message)
 
+            piano_handler.update()
 
 
 def run_synthetic():
