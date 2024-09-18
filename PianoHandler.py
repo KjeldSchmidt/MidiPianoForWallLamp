@@ -1,8 +1,9 @@
 import colorsys
 import math
 import time
+from typing import NewType
 
-import mido
+from mido import Message
 import requests
 
 from Controls import Controls
@@ -15,28 +16,32 @@ CONTROL_NAMES = {
     "foreground_brightness": 73,
     "background_brightness": 72,
     "decay_speed": 74,
+    "pressed_flicker_strength": 91,
+    "pressed_flicker_speed": 93,
     "foreground_hue": 10,
     "background_hue": 42,
 }
 
+EventTime = NewType("EventTime", float)
 
 class PianoHandler:
     def __init__(self):
         self.colors = [0, 0, 0] * NUM_LEDS
-        self.pressed_keys: set[int] = set()
-        self.decaying_keys: dict[int, float] = {}
+        self.pressed_keys: dict[int, EventTime] = {}
+        self.decaying_keys: dict[int, EventTime] = {}
         self.controls = Controls(CONTROL_NAMES)
 
-    def handle_message(self, message: mido.Message):
-        if message.type == "note_on" and message.velocity != 0:
-            self.pressed_keys.add(message.note)
-        if message.type == "note_on" and message.velocity == 0:
-            self.pressed_keys.remove(message.note)
-            self.decaying_keys[message.note] = time.time()
-        if message.type == "program_change" and message.program < 9:
-            self.base_hue = 0.115 * message.program
-        if message.type == "control_change":
-            self.controls.handle_message(message)
+    def handle_message(self, message: Message):
+        match message:
+            case Message(type="note_on", velocity = 0):
+                self.pressed_keys.pop(message.note)
+                self.decaying_keys[message.note] = time.time()
+            case Message(type="note_on"):
+                self.pressed_keys[message.note] = time.time()
+            case Message(type="control_change"):
+                self.controls.handle_message(message)
+            case unused_message:
+                print(f"{unused_message=}")
 
     def update(self):
         self.calc_colors()
@@ -49,9 +54,8 @@ class PianoHandler:
         self.colors = [r, g, b] * NUM_LEDS
 
         # Decaying keys
+        now = time.time()
         if self.controls.decay_speed != 0:
-            now = time.time()
-
             remaining_decay_keys = {}
             decay_levels = {}
             for key, release_time in self.decaying_keys.items():
@@ -72,9 +76,12 @@ class PianoHandler:
                     self.colors[led_index*3:(led_index+1)*3] = [r, g, b]
 
         # Active keys
-        r, g, b = colorsys.hsv_to_rgb(self.controls.foreground_hue / 127, 1, self.controls.foreground_brightness / 255)
-        r, g, b = unit_to_byte_range(r, g, b)
-        for key in self.pressed_keys:
+        for key, press_time in self.pressed_keys.items():
+            pre_flicker_value = self.controls.foreground_brightness / 255
+            phase = math.sin(math.sqrt(self.controls.pressed_flicker_speed) * now - press_time)
+            flicker_modifier = 1 - (self.controls.pressed_flicker_strength/127) * (phase + 1)/2
+            r, g, b = colorsys.hsv_to_rgb(self.controls.foreground_hue / 127, 1, pre_flicker_value * flicker_modifier)
+            r, g, b = unit_to_byte_range(r, g, b)
             led_indices = map_note_to_leds(key)
             for led_index in led_indices:
                 self.colors[led_index*3:(led_index+1)*3] = [r, g, b]

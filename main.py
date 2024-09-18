@@ -13,7 +13,6 @@ def run_with_keyboard():
         print("Ready!")
         while True:
             for message in inport.iter_pending():
-                print(f"{message=}")
                 piano_handler.handle_message(message)
 
             piano_handler.update()
