@@ -22,7 +22,7 @@ def run_synthetic():
     colors = []
     num_leds = 110
     for i in range(num_leds):
-        hue = i/num_leds
+        hue = i / num_leds
         r, g, b = colorsys.hsv_to_rgb(hue, 1, 1)
         colors.append(math.floor(r * 255))
         colors.append(math.floor(g * 255))
@@ -32,7 +32,7 @@ def run_synthetic():
 
     response = requests.post(
         "http://192.168.178.26/ColorFromPayload",
-        headers={'Content-Type': 'application/octet-stream'},
+        headers={"Content-Type": "application/octet-stream"},
         data=payload,
     )
     print(response.status_code)

@@ -15,6 +15,9 @@ requests = "^2.32.3"
 ruff = "^0.5.1"
 mypy = "^1.10.1"
 
+[tool.ruff]
+line-length = 120
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

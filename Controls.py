@@ -19,4 +19,3 @@ class Controls:
             raise KeyError(f"Trying to access named control '{name}' not found in {self.control_names_to_channel=}")
 
         return self.values[self.control_names_to_channel[name]]
-
