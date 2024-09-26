@@ -1,4 +1,5 @@
 import colorsys
+import dataclasses
 import math
 import time
 from typing import NewType
@@ -25,10 +26,16 @@ CONTROL_NAMES = {
 EventTime = NewType("EventTime", float)
 
 
+@dataclasses.dataclass
+class KeyWobble:
+    last_update: EventTime
+    passed_pseudo_time: float
+
+
 class PianoHandler:
     def __init__(self):
         self.colors = [0, 0, 0] * NUM_LEDS
-        self.pressed_keys: dict[int, EventTime] = {}
+        self.pressed_keys: dict[int, KeyWobble] = {}
         self.decaying_keys: dict[int, EventTime] = {}
         self.controls = Controls(CONTROL_NAMES)
 
@@ -36,9 +43,9 @@ class PianoHandler:
         match message:
             case Message(type="note_on", velocity=0):
                 self.pressed_keys.pop(message.note)
-                self.decaying_keys[message.note] = time.time()
+                self.decaying_keys[message.note] = EventTime(time.time())
             case Message(type="note_on"):
-                self.pressed_keys[message.note] = time.time()
+                self.pressed_keys[message.note] = KeyWobble(EventTime(time.time()), 0)
             case Message(type="control_change"):
                 self.controls.handle_message(message)
             case unused_message:
@@ -84,9 +91,12 @@ class PianoHandler:
                     self.colors[led_index * 3 : (led_index + 1) * 3] = [r, g, b]
 
         # Active keys
-        for key, press_time in self.pressed_keys.items():
+        for key, key_wobble in self.pressed_keys.items():
+            real_time_since_last_update = now - key_wobble.last_update
+            key_wobble.last_update = now
+            key_wobble.passed_pseudo_time += real_time_since_last_update * 0.2 * self.controls.pressed_flicker_speed
             pre_flicker_value = self.controls.foreground_brightness / 255
-            phase = math.sin(math.sqrt(self.controls.pressed_flicker_speed) * now - press_time)
+            phase = math.sin(key_wobble.passed_pseudo_time)
             flicker_modifier = 1 - (self.controls.pressed_flicker_strength / 127) * (phase + 1) / 2
             r, g, b = colorsys.hsv_to_rgb(
                 self.controls.foreground_hue / 127,
