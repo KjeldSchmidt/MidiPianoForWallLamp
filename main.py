@@ -7,7 +7,7 @@ import requests
 from PianoHandler import PianoHandler
 
 
-def run_with_keyboard():
+def run_with_keyboard() -> None:
     piano_handler = PianoHandler()
     with mido.open_input() as inport:
         print("Ready!")
@@ -18,7 +18,7 @@ def run_with_keyboard():
             piano_handler.update()
 
 
-def run_synthetic():
+def run_synthetic() -> None:
     colors = []
     num_leds = 110
     for i in range(num_leds):
