@@ -42,7 +42,7 @@ class PianoHandler:
 
     def handle_message(self, message: Message) -> None:
         match message:
-            case Message(type="note_on", velocity=0):
+            case Message(type="note_on", velocity=0) | Message(type="note_off"):
                 self.decaying_keys[message.note] = EventTime(time.time()), self.pressed_keys[message.note]
                 self.pressed_keys.pop(message.note)
             case Message(type="note_on"):
@@ -80,12 +80,10 @@ class PianoHandler:
             self.decaying_keys = remaining_decay_keys
             for key, decay_level in decay_levels.items():
                 flickered_brightness = self.calculate_flickered_brightness(self.decaying_keys[key][1], now)
-                print(f"decay flicker_brightness: {flickered_brightness}")
                 hue = self.controls.foreground_hue * (1 - decay_level) + self.controls.background_hue * decay_level
                 brightness = (
                     flickered_brightness * (1 - decay_level) + self.controls.background_brightness / 127 * decay_level
                 )
-                print(f"decay brightness: {flickered_brightness}")
                 r, g, b = colorsys.hsv_to_rgb(hue / 127, 1, brightness)
                 r, g, b = unit_to_byte_range(r, g, b)
 
@@ -96,7 +94,6 @@ class PianoHandler:
         # Active keys
         for key, key_wobble in self.pressed_keys.items():
             flickered_brightness = self.calculate_flickered_brightness(key_wobble, now)
-            print(f"active flicker_brightness: {flickered_brightness}")
             r, g, b = colorsys.hsv_to_rgb(
                 self.controls.foreground_hue / 127,
                 1,
