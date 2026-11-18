@@ -26,6 +26,7 @@ class Synth:
 
         # Select Acoustic Grand Piano (MIDI program 0)
         self.fs.program_select(0, self.sfid, 0, 0)
+        print("Soundfont loaded, Synth ready")
 
     def handle_message(self, msg):
         """Forward a Mido MIDI message to FluidSynth."""
@@ -68,16 +69,3 @@ class Synth:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
-
-
-    def handle_message(self, message: Message) -> None:
-        match message:
-            case Message(type="note_on", velocity=0) | Message(type="note_off"):
-                self.decaying_keys[message.note] = EventTime(time.time()), self.pressed_keys[message.note]
-                self.pressed_keys.pop(message.note)
-            case Message(type="note_on"):
-                self.pressed_keys[message.note] = KeyWobble(EventTime(time.time()), 0)
-            case Message(type="control_change"):
-                self.controls.handle_message(message)
-            case unused_message:
-                print(f"{unused_message=}")
