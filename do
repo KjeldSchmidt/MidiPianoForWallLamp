@@ -14,7 +14,7 @@ function task_pi_restart {
 }
 
 function _pi_restart_local {
-  ssh "${ssh_connect_string}" 'sudo systemctl restart midi-piano-lights.service'
+  sudo systemctl restart midi-piano-lights.service
 }
 
 ssh_connect_string=pi@rpi-piano
