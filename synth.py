@@ -52,12 +52,6 @@ class Synth:
             # Mido uses -8192 to 8191; FluidSynth uses 0 to 16383
             self.fs.pitch_bend(channel, msg.pitch + 8192)
 
-        elif msg.type == "aftertouch":
-            self.fs.channel_pressure(channel, msg.value)
-
-        elif msg.type == "polytouch":
-            self.fs.key_pressure(channel, msg.note, msg.value)
-
     def close(self):
         """Stop FluidSynth and release audio resources."""
         if self.fs is not None:
