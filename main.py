@@ -9,7 +9,7 @@ from PianoHandler import PianoHandler
 
 def run_with_keyboard() -> None:
     piano_handler = PianoHandler()
-    with mido.open_input() as inport:
+    with mido.open_input("USB MIDI Interface:USB MIDI Interface MIDI 1 20:0") as inport:
         print("Ready!")
         while True:
             for message in inport.iter_pending():
