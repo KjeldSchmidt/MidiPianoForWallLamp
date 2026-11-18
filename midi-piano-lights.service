@@ -1,0 +1,15 @@
+[Unit]
+Description=Midi Piano Lights
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+User=pi
+WorkingDirectory=/home/pi/MidiPianoForWallLamp
+ExecStart=/home/pi/.local/bin/poetry run python main.py
+
+[Install]
+WantedBy=multi-user.target
