@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 set -eu
 
+## pi-restart: restarts the midi service
+function task_pi_restart {
+  if [[ "$USER" == "pi" ]]; then
+    printf "Running locally on Raspberry Pi\n\n"
+    _pi_restart_local
+  else
+    printf "Running via SSH to Raspberry Pi\n\n"
+    ssh "${ssh_connect_string}" "$(declare -f _pi_restart_local); _pi_restart_local"
+  fi
+
+}
+
+function _pi_restart_local {
+  ssh "${ssh_connect_string}" 'sudo systemctl restart midi-piano-lights.service'
+}
+
 ssh_connect_string=pi@rpi-piano
 ## setup: Installs the python runtime and dependencies for local development
 function task_setup {
