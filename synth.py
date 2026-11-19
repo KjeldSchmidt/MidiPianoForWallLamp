@@ -9,13 +9,14 @@ class Synth:
     def __init__(
         self,
         soundfont="/usr/share/sounds/sf2/FluidR3_GM.sf2",
-        gain=0.5,
+        gain=0.8,
         driver="alsa"
     ):
         self.fs = fluidsynth.Synth(gain=gain)
 
         # Start audio output
         self.fs.start(driver=driver)
+        print("FluidSynth started", flush=True)
 
         # Load SoundFont
         self.sfid = self.fs.sfload(soundfont)
@@ -26,11 +27,12 @@ class Synth:
 
         # Select Acoustic Grand Piano (MIDI program 0)
         self.fs.program_select(0, self.sfid, 0, 0)
-        print("Soundfont loaded, Synth ready")
+        print(f"Soundfont {self.sfid} loaded, Synth ready", flush=True)
 
     def handle_message(self, msg):
         """Forward a Mido MIDI message to FluidSynth."""
 
+        print("Synth received message", flush=True)
         channel = getattr(msg, "channel", 0)
 
         if msg.type == "note_on":
