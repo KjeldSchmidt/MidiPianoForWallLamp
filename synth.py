@@ -25,8 +25,8 @@ class Synth:
             self.fs.delete()
             raise RuntimeError(f"Could not load SoundFont: {soundfont}")
 
-        # Select Acoustic Grand Piano (MIDI program 0)
-        self.fs.program_select(0, self.sfid, 0, 0)
+        for ch in range(16):
+            self.fs.program_select(ch, self.sfid, 0, 0)
         print(f"Soundfont {self.sfid} loaded, Synth ready", flush=True)
 
     def handle_message(self, msg):
